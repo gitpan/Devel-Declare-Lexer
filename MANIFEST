@@ -1,0 +1,21 @@
+lib/Devel/Declare/Lexer.pm
+lib/Devel/Declare/Lexer/Stream.pm
+lib/Devel/Declare/Lexer/Token.pm
+lib/Devel/Declare/Lexer/Token/Comma.pm
+lib/Devel/Declare/Lexer/Token/Declarator.pm
+lib/Devel/Declare/Lexer/Token/EndOfStatement.pm
+lib/Devel/Declare/Lexer/Token/LeftBracket.pm
+lib/Devel/Declare/Lexer/Token/Newline.pm
+lib/Devel/Declare/Lexer/Token/Operator.pm
+lib/Devel/Declare/Lexer/Token/RightBracket.pm
+lib/Devel/Declare/Lexer/Token/String.pm
+lib/Devel/Declare/Lexer/Token/Variable.pm
+lib/Devel/Declare/Lexer/Token/Whitespace.pm
+t/Lexer.t
+README
+Makefile.PL
+MANIFEST
+example/example.pl
+example/ExampleSyntax.pm
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
