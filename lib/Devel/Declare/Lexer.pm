@@ -2,9 +2,9 @@ package Devel::Declare::Lexer;
 
 use strict;
 use warnings;
-use v5.14.2;
+use v5;
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 
 use Data::Dumper;
 use Devel::Declare;

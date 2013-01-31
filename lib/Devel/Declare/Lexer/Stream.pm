@@ -1,6 +1,6 @@
 package Devel::Declare::Lexer::Stream;
 
-use v5.14.2;
+use v5;
 use Tie::Array;
 
 our @ISA = ('Tie::StdArray');
