@@ -1,5 +1,5 @@
                 =============================================
-                Package "Devel::Declare::Lexer" Version 0.001
+                Package "Devel::Declare::Lexer" Version 0.002
                 =============================================
 
 
@@ -26,10 +26,16 @@ License".
 Installation:
 -------------
 
-perl Makefile.PL
-make
-make test
-make install
+You can install directly from CPAN: 
+
+    install Devel::Declare::Lexer
+
+Alternatively, you can build and install the module yourself:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
 
 Under Windows, depending on your environment,
 use "nmake" or "dmake" instead of "make".

@@ -17,7 +17,10 @@ sub get
 {
     my ($self) = @_;
 
-    return $self->{start} . $self->{value} . $self->{end};
+    my $v = $self->{value};
+    $v =~ s/\n/\\n/g;
+
+    return $self->{start} . $v . $self->{end};
 }
 
 1;
