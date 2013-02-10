@@ -10,6 +10,7 @@ lib/Devel/Declare/Lexer/Token/Heredoc.pm
 lib/Devel/Declare/Lexer/Token/LeftBracket.pm
 lib/Devel/Declare/Lexer/Token/Newline.pm
 lib/Devel/Declare/Lexer/Token/Operator.pm
+lib/Devel/Declare/Lexer/Token/Raw.pm
 lib/Devel/Declare/Lexer/Token/RightBracket.pm
 lib/Devel/Declare/Lexer/Token/String.pm
 lib/Devel/Declare/Lexer/Token/Variable.pm
@@ -17,8 +18,10 @@ lib/Devel/Declare/Lexer/Token/Whitespace.pm
 t/Factory.t
 t/hashes.t
 t/Lexer.t
+t/Raw.t
 t/strings.t
 t/subs.t
+t/inject.t
 README
 Makefile.PL
 MANIFEST

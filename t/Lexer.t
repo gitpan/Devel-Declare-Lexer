@@ -102,7 +102,21 @@ lexer_test ( {
         $b
         ;|, 'Normal multiline');
 
-++$tests && is(__LINE__, 105, 'Line numbering (CHECK WHICH LINE THIS IS ON)');
+# FIXME a \n inside a block breaks line numbering
+lexer_test {
+    print "1";
+    print "2";
+    print "3";
+    print "...";
+};
+++$tests && is($lexed, q|lexer_test {
+    print "1";
+    print "2";
+    print "3";
+    print "...";
+};|, 'Block');
+
+++$tests && is(__LINE__, 119, 'Line numbering (CHECK WHICH LINE THIS IS ON)');
 
 done_testing $tests;
 

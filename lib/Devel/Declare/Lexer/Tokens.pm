@@ -8,6 +8,7 @@ use Devel::Declare::Lexer::Token::Heredoc;
 use Devel::Declare::Lexer::Token::LeftBracket;
 use Devel::Declare::Lexer::Token::Newline;
 use Devel::Declare::Lexer::Token::Operator;
+use Devel::Declare::Lexer::Token::Raw;
 use Devel::Declare::Lexer::Token::RightBracket;
 use Devel::Declare::Lexer::Token::String;
 use Devel::Declare::Lexer::Token::Variable;

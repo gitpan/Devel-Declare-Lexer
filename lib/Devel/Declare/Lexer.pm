@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use v5;
 
-our $VERSION = '0.005';
+our $VERSION = '0.007';
 
 use Data::Dumper;
 use Devel::Declare;
@@ -40,6 +40,14 @@ sub import_for
     my $class = shift;
 
     no strict 'refs';
+
+    my %subinject = ();
+    if(ref($args[0]) =~ /HASH/) {
+        $DEBUG and say STDERR "Using hash for import";
+        %subinject = %{$args[0]};
+        @args = keys %subinject;
+    }
+
     my @consts;
 
     my %tags = map { $_ => 1 } @args;
@@ -52,7 +60,7 @@ sub import_for
         push @consts, "lexer_test";
     }
 
-    my @names = @_;
+    my @names = @args;
     for my $name (@names) {
         next if $name =~ /:/;
         $DEBUG and say STDERR "Adding '$name' to keyword list";
@@ -68,7 +76,11 @@ sub import_for
                 $word => { const => \&lexer }
             }
         );
-        *{$caller.'::'.$word} = sub () { 1; };
+        if($subinject{$word}) {
+            *{$caller.'::'.$word} = $subinject{$word};
+        } else {
+            *{$caller.'::'.$word} = sub () { 1; };
+        }
     }
 }
 
@@ -159,6 +171,7 @@ sub lexer
     my $heredoc = undef;
     my $heredoc_end_re = undef;
     my $heredoc_end_re2 = undef;
+    my $nest = 0; # nested bracket tracking, just in case we get ; inside a block
     while($offset < length $linestr) {
         $DEBUG and say STDERR Dumper \%lineoffsets;
         if($heredoc && !(substr($linestr, $offset, 2) eq "\n")) {
@@ -210,7 +223,7 @@ sub lexer
             # this lets us capture a newline directly after a semicolon
             # and immediately exit the loop - otherwise we might start
             # consuming code that doesn't belong to us
-            last if $eoleos;
+            last if $eoleos && !$nest;
             $eoleos = 0;
 
             # If we're here, it's just a new line inside the statement that 
@@ -253,7 +266,8 @@ sub lexer
         if(substr($linestr, $offset, 1) =~ /(\{|\[|\()/) {
             my $b = substr($linestr, $offset, 1);
             push @tokens, new Devel::Declare::Lexer::Token::LeftBracket( value => $b );
-            $DEBUG and say STDERR "Got left bracket '$b'";
+            $nest++;
+            $DEBUG and say STDERR "Got left bracket '$b', nest[$nest]";
             $offset += 1;
             next;
         }
@@ -261,7 +275,8 @@ sub lexer
         if(substr($linestr, $offset, 1) =~ /(\}|\]|\))/) {
             my $b = substr($linestr, $offset, 1);
             push @tokens, new Devel::Declare::Lexer::Token::RightBracket( value => $b );
-            $DEBUG and say STDERR "Got right bracket '$b'";
+            $nest--;
+            $DEBUG and say STDERR "Got right bracket '$b', nest[$nest]";
             $offset += 1;
             next;
         }
@@ -384,8 +399,11 @@ sub lexer
     }
     $DEBUG and say STDERR "Final statement: [$stmt]";
 
+    # FIXME line numbering is broken if a \n appears inside a block, e.g. keyword { print "\n"; }
+    #my @lcnt = split /[^\\]\\n/, $stmt;
     my @lcnt = split /\\n/, $stmt;
     my $lc = scalar @lcnt;
+    $DEBUG and say STDERR "Lines:\n", Dumper \@lcnt;
     my $lineadjust = $lc - $line;
     $DEBUG and say STDERR "Linecount[$lc] lines[$line] - missing $lineadjust lines";
 
@@ -501,6 +519,19 @@ into
 
 Unlike L<Devel::Declare>, there's no need to worry about parsing text and
 taking care of multiline strings or code blocks - it's all done for you.
+
+=head1 ADVANCED USAGE
+
+L<Devel::Declare::Lexer>'s standard behaviour is to inject a sub into the
+calling package which returns a 1. Because your statement typically gets
+transformed into something like
+    keyword and [your statement here];
+the fact keyword evaluates to 1 means everything following the and will always
+be executed.
+
+You can extend this by using a different import syntax when loading L<Devel::Declare::Lexer>
+    use Devel::Declare::Lexer { keyword => sub { $Some::Package::variable } };
+which will cause the provided sub to be injected instead of the default sub.
 
 =head1 SEE ALSO
 

@@ -7,6 +7,7 @@ BEGIN {
 use strict;
 use warnings;
 use Devel::Declare::Lexer qw/ debug function has /; 
+use Devel::Declare::Lexer::Factory qw( :all );
 
 BEGIN {
     #$Devel::Declare::Lexer::DEBUG = 1;
@@ -38,59 +39,45 @@ BEGIN {
         my @start = @stream[0..1];
         my @end = @stream[2..$#stream];
 
-        my @output;
-        tie @output, 'Devel::Declare::Lexer::Stream';
+        my $name = shift @end; # get function name
 
-        shift @stream; # remove keyword
-        shift @stream; # remove whitespace
-        my $name = shift @stream; # get function name
-
+        # Capture the variables
         my @vars = ();
-        while($stream[0]->{value} !~ /{/) {
-            my $tok = shift @stream;
+        # Consume everything until the start of block
+        while($end[0]->{value} !~ /{/) {
+            my $tok = shift @end;
             next if ref($tok) =~ /Devel::Declare::Lexer::Token::(Left|Right)Bracket/;
             next if ref($tok) =~ /Devel::Declare::Lexer::Token::Operator/;
             next if ref($tok) =~ /Devel::Declare::Lexer::Token::Whitespace/;
            
+            # If we've got a variable, capture it
             if(ref($tok) =~ /Devel::Declare::Lexer::Token::Variable/) {
                 push @vars, [
                     $tok,
-                    shift @stream
+                    shift @end
                 ];
             }
         }
 
-        push @output, @start;
-        # Terminate the existing statement
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => '1' );
-        push @output, new Devel::Declare::Lexer::Token::EndOfStatement( value => ';' );
+        shift @end; # remove the {
 
-        # Add the sub keyword/name
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'sub' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, $name;
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-
-        # Output the 'my (...) = @_;' line
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, shift @stream; # consume the {
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'my' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '(' );
-        for my $var (@vars) {
-            push @output, @$var;
-            push @output, new Devel::Declare::Lexer::Token::Operator( value => ',' );
-        }
-        pop @output; # one too many commas
-        push @output, new Devel::Declare::Lexer::Token::RightBracket( value => ')' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '=' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '@_' );
-        push @output, new Devel::Declare::Lexer::Token::EndOfStatement( value => ';' );
-
-        # Stick everything else back on the end
-        push @output, @stream;
+        # Build a sub with an opening my statement
+        my @output = _stream(\@start, [
+            _statement([_bareword(1)]),
+            _sub($name->{value}, [
+                _block([
+                    _statement([
+                        _bareword('my'),
+                        _block([
+                            _list(@vars)
+                        ], '('),
+                        _operator('='),
+                        _variable('@', '_')
+                    ]),
+                    _stream(undef, \@end)
+                ], '{', { no_close => 1 }), # don't close it ( #FIXME lexer bug, stops at first ; )
+            ]),
+        ]);
 
         return \@output;
     });
@@ -100,9 +87,6 @@ BEGIN {
         my @stream = @{$stream_r};
         my @start = @stream[0..1];
         my @end = @stream[2..$#stream];
-
-        my @output;
-        tie @output, 'Devel::Declare::Lexer::Stream';
 
         shift @stream; # remove keyword
         while(ref($stream[0]) =~ /Devel::Declare::Lexer::Token::Whitespace/) {
@@ -120,23 +104,9 @@ BEGIN {
             shift @stream;
         }
 
-        push @output, @start;
-        # Terminate the existing statement
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => '1' );
-        push @output, new Devel::Declare::Lexer::Token::EndOfStatement( value => ';' );
-
-        # Setup the property store
-        shift @stream; # consume the {
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'my' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '$' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => '__props_lexer_' . $name->{value} );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '=' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '{' );
-
         my $nest = 0;
+        my @propblock = ();
+        shift @stream; # consume the {
         while(@stream) {
             if(ref($stream[0]) =~ /Devel::Declare::Lexer::Token::LeftBracket/) {
                 $nest++;
@@ -144,82 +114,57 @@ BEGIN {
                 last if $nest == 0 && $stream[0]->{value} =~ /}/;
                 $nest--;
             }
-            push @output, shift @stream; # consume tokens
+            push @propblock, shift @stream; # consume tokens
         }
+        shift @stream; # consume the }
 
-        push @output, shift @stream; # consume the }
-        push @output, new Devel::Declare::Lexer::Token::EndOfStatement(value => ';');
+        my @output = _stream($stream_r, [
+            _statement([_bareword(1)]),
+            _statement([
+                _bareword('my'),
+                _whitespace(' '),
+                _var_assign(
+                    [_variable('$','__props_lexer_' . $name->{value})], 
+                    [_block([
+                       @propblock 
+                    ], '{')]
+                )
+            ]),
+            _statement([
+                _var_assign(
+                    [_variable('$','__props_lexer_' . $name->{value} . '->{\'value\'}')],
+                    [_variable('$','__props_lexer_' . $name->{value} . '->{\'default\'}')]
+                )
+            ]),
+            _sub(
+                $name->{value}, 
+                [_block([
+                    _statement([
+                        _bareword('my'),
+                        _whitespace(' '),
+                        _var_assign(
+                            [_block([
+                                _variable('$','value')
+                            ], '(')],
+                            [_variable('@','_')]
+                        )
+                    ]),
+                    _if([
+                        _variable('$','value'),
+                    ],
+                    [
+                        _var_assign(
+                            [_variable('$','__props_lexer_' . $name->{value} . '->{\'value\'}')],
+                            [_variable('$','value')]
+                        )
+                    ]),
+                    _return(
+                        [_variable('$','__props_lexer_' . $name->{value} . '->{\'value\'}')]
+                    )
+                ])]
+            ),
+        ]);
 
-        # setup the value
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '$' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => '__props_lexer_' . $name->{value} );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '-' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '>' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '{' );
-        push @output, new Devel::Declare::Lexer::Token::String( start => "'", end => "'", value => 'value' );
-        push @output, new Devel::Declare::Lexer::Token::RightBracket( value => '}' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '=' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '$' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => '__props_lexer_' . $name->{value} );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '-' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '>' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '{' );
-        push @output, new Devel::Declare::Lexer::Token::String( start => "'", end => "'", value => 'default' );
-        push @output, new Devel::Declare::Lexer::Token::RightBracket( value => '}' );
-        push @output, new Devel::Declare::Lexer::Token::EndOfStatement(value => ';');
-
-        # Add the sub keyword/name
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'sub' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => $name->{value} );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '{' );
-
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'my' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '(' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '$' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'value' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => ')' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '=' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '@' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => '_' );
-        push @output, new Devel::Declare::Lexer::Token::EndOfStatement(value => ';');
-
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'if' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '(' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '$' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'value' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => ')' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '{' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '$' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => '__props_lexer_' . $name->{value} );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '-' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '>' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '{' );
-        push @output, new Devel::Declare::Lexer::Token::String( start => "'", end => "'", value => 'value' );
-        push @output, new Devel::Declare::Lexer::Token::RightBracket( value => '}' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '=' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '$' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'value' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '}' );
-        push @output, new Devel::Declare::Lexer::Token::EndOfStatement(value => ';');
-
-        # Return the value
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => 'return' );
-        push @output, new Devel::Declare::Lexer::Token::Whitespace( value => ' ' );
-        push @output, new Devel::Declare::Lexer::Token::Variable( value => '$' );
-        push @output, new Devel::Declare::Lexer::Token::Bareword( value => '__props_lexer_' . $name->{value} );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '-' );
-        push @output, new Devel::Declare::Lexer::Token::Operator( value => '>' );
-        push @output, new Devel::Declare::Lexer::Token::LeftBracket( value => '{' );
-        push @output, new Devel::Declare::Lexer::Token::String( start => "'", end => "'", value => 'value' );
-        push @output, new Devel::Declare::Lexer::Token::RightBracket( value => '}' );
-        push @output, new Devel::Declare::Lexer::Token::EndOfStatement(value => ';');
-
-        # Close the sub
-        push @output, new Devel::Declare::Lexer::Token::RightBracket( value => '}' );
-        
         # Stick everything else back on the end
         push @output, @stream;
         return \@output;
