@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use v5;
 
-our $VERSION = '0.007';
+our $VERSION = '0.008';
 
 use Data::Dumper;
 use Devel::Declare;
@@ -355,7 +355,7 @@ sub lexer
             next;
         }
         # Check for operator after strings (so heredocs <<NAME work)
-        if(substr($linestr, $offset, 1) =~ /[!\+\-\*\/\.><=,]/) {
+        if(substr($linestr, $offset, 1) =~ /[!\+\-\*\/\.><=,|&]/) {
             $tok = substr($linestr, $offset, 1);
             $DEBUG and say STDERR "Got operator '$tok'";
             push @tokens, new Devel::Declare::Lexer::Token::Operator( value => $tok );

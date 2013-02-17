@@ -1,4 +1,5 @@
 lib/Devel/Declare/Lexer.pm
+lib/Devel/Declare/Interpolator.pm
 lib/Devel/Declare/Lexer/Stream.pm
 lib/Devel/Declare/Lexer/Token.pm
 lib/Devel/Declare/Lexer/Tokens.pm
@@ -22,6 +23,8 @@ t/Raw.t
 t/strings.t
 t/subs.t
 t/inject.t
+t/interpolate.t
+t/deinterpolate.t
 README
 Makefile.PL
 MANIFEST

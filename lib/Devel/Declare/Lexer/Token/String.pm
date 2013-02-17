@@ -2,6 +2,8 @@ package Devel::Declare::Lexer::Token::String;
 
 use base qw/ Devel::Declare::Lexer::Token /;
 
+use Devel::Declare::Lexer::Interpolator;
+
 use v5;
 
 sub new
@@ -21,6 +23,19 @@ sub get
     $v =~ s/\n/\\n/g;
 
     return $self->{start} . $v . $self->{end};
+}
+
+sub deinterpolate
+{
+    my ($self) = @_;
+
+    return Devel::Declare::Lexer::Interpolator::deinterpolate($self->{value});
+}
+
+sub interpolate
+{
+    my ($self, @args) = @_;
+    return Devel::Declare::Lexer::Interpolator::interpolate($self->{value}, @args);
 }
 
 1;
