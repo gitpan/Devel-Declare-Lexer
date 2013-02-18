@@ -6,12 +6,43 @@ BEGIN {
 
 use strict;
 use warnings;
-use Devel::Declare::Lexer qw/ debug function has /; 
+use Devel::Declare::Lexer qw/ debug function has auto_sprintf /; 
 use Devel::Declare::Lexer::Factory qw( :all );
 
 BEGIN {
     #$Devel::Declare::Lexer::DEBUG = 1;
-    Devel::Declare::Lexer::lexed(debug => sub {
+    Devel::Declare::Lexer::lexed(auto_sprintf => sub {
+        my ($stream_r) = @_;
+        my @stream = @$stream_r;
+
+        my @vars = $stream[4]->deinterpolate;
+        my @args = (
+            "%s",
+            "£%04d"
+        );
+        $stream[4]->{value} = $stream[4]->interpolate(@args);
+       
+        my @start = @stream[0..3];
+        my @str = @stream[4..4];
+        my @end = @stream[5..$#stream];
+     
+        push @start, (
+            new Devel::Declare::Lexer::Token::Bareword( value => 'sprintf' ),
+            new Devel::Declare::Lexer::Token::LeftBracket( value => '(' ),
+        );
+        unshift @end, (
+            new Devel::Declare::Lexer::Token::Operator( value => ',' ),
+            new Devel::Declare::Lexer::Token::Variable( value => $vars[0] ),
+            new Devel::Declare::Lexer::Token::Operator( value => ',' ),
+            new Devel::Declare::Lexer::Token::Variable( value => $vars[1] ),
+            new Devel::Declare::Lexer::Token::RightBracket( value => ')' ),
+        );
+
+        @stream = (@start, @str, @end);
+
+        return \@stream;
+    });
+   Devel::Declare::Lexer::lexed(debug => sub {
         my ($stream_r) = @_;
         my @stream = @$stream_r;
 
@@ -177,6 +208,7 @@ sub import
     Devel::Declare::Lexer::import_for($caller, "debug");
     Devel::Declare::Lexer::import_for($caller, "function");
     Devel::Declare::Lexer::import_for($caller, "has");
+    Devel::Declare::Lexer::import_for($caller, "auto_sprintf");
 }
 
 1;

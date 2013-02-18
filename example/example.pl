@@ -3,6 +3,7 @@
 package ExampleUsage;
 
 use ExampleSyntax;
+use POSIX qw(strftime);
 
 debug "This is a test\n";
 
@@ -20,3 +21,8 @@ function example2 ($a) {
     return $a * a;
 }
 print "example2 = " . example2(10) . "\n";
+
+my $str = 'sprintf';
+my $num = 1.0362;
+auto_sprintf print "This becomes a $str, num is 1.0362: $num \n";
+

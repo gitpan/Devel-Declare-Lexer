@@ -1,5 +1,5 @@
 lib/Devel/Declare/Lexer.pm
-lib/Devel/Declare/Interpolator.pm
+lib/Devel/Declare/Lexer/Interpolator.pm
 lib/Devel/Declare/Lexer/Stream.pm
 lib/Devel/Declare/Lexer/Token.pm
 lib/Devel/Declare/Lexer/Tokens.pm
