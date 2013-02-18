@@ -1,4 +1,4 @@
-package Devel::Declare::Lexer::Interpolator;
+package Devel::Declare::Lexer::Token::String::Interpolator;
 
 use strict;
 use warnings;
@@ -44,10 +44,10 @@ sub deinterpolate {
     for my $char (@chars) {
         push @procd, $char;
         $pos++;
-        $DEBUG and say STDERR "Got char '$char'";
+        $DEBUG and say STDERR "Got char '$char' at pos $pos";
 
-        if($char =~ /\s/ && $tok) {
-            $DEBUG and say STDERR "    Captured token '$tok' at pos $pos";
+        if($char =~ /[^\w_{}\[\]:@\$]/ && $tok) {
+            $DEBUG and say STDERR "Captured token '$tok' at pos $pos (eot)";
             push @vars, {
                 token => $tok,
                 start => $pos - (length $tok),

@@ -1,5 +1,4 @@
 lib/Devel/Declare/Lexer.pm
-lib/Devel/Declare/Lexer/Interpolator.pm
 lib/Devel/Declare/Lexer/Stream.pm
 lib/Devel/Declare/Lexer/Token.pm
 lib/Devel/Declare/Lexer/Tokens.pm
@@ -14,6 +13,7 @@ lib/Devel/Declare/Lexer/Token/Operator.pm
 lib/Devel/Declare/Lexer/Token/Raw.pm
 lib/Devel/Declare/Lexer/Token/RightBracket.pm
 lib/Devel/Declare/Lexer/Token/String.pm
+lib/Devel/Declare/Lexer/Token/String/Interpolator.pm
 lib/Devel/Declare/Lexer/Token/Variable.pm
 lib/Devel/Declare/Lexer/Token/Whitespace.pm
 t/Factory.t

@@ -126,10 +126,10 @@ test print "$$: Perl special variable\n";
 ++$tests && is(scalar @testvars, 1, 'Captured 1 variable');
 ++$tests && is($testvars[0], '$$', 'Captured $$');
 
-#test print "Variable with comma $a, $a\n";
-#++$tests && is(scalar @testvars, 2, 'Captured 2 variable');
-#++$tests && is($testvars[0], '$a', 'Captured $a');
-#++$tests && is($testvars[1], '$a', 'Captured $a again');
+test print "Variable with comma $a, $a\n";
+++$tests && is(scalar @testvars, 2, 'Captured 2 variable');
+++$tests && is($testvars[0], '$a', 'Captured $a');
+++$tests && is($testvars[1], '$a', 'Captured $a again');
 
 done_testing($tests);
 
