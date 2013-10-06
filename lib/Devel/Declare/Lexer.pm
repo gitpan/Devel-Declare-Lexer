@@ -4,7 +4,9 @@ use strict;
 use warnings;
 use v5;
 
-our $VERSION = '0.011';
+use feature 'say';
+
+our $VERSION = '0.012';
 
 use Data::Dumper;
 use Devel::Declare;
@@ -22,9 +24,10 @@ use Devel::Declare::Lexer::Token::String;
 use Devel::Declare::Lexer::Token::Variable;
 use Devel::Declare::Lexer::Token::Whitespace;
 
-use vars qw/ @ISA $DEBUG /;
+use vars qw/ @ISA $DEBUG $SHOWTRANSLATE /;
 @ISA = ();
 $DEBUG = 0;
+$SHOWTRANSLATE = 0;
 
 sub import
 {
@@ -77,8 +80,10 @@ sub import_for
             }
         );
         if($subinject{$word}) {
+            $DEBUG and say STDERR "- Using sub provided in import";
             *{$caller.'::'.$word} = $subinject{$word};
         } else {
+            $DEBUG and say STDERR "- Using default sub";
             *{$caller.'::'.$word} = sub () { 1; };
         }
     }
@@ -198,13 +203,14 @@ sub lexer
             next;
         }
 
-        $DEBUG and say STDERR "Offset[$offset], Remaining[", substr($linestr, $offset), "]";
+        $DEBUG and say STDERR "Offset[$offset], nest [$nest], Remaining[", substr($linestr, $offset), "]";
 
         if(substr($linestr, $offset, 1) eq ';') {
             $DEBUG and say STDERR "Got end of statement";
             push @tokens, new Devel::Declare::Lexer::Token::EndOfStatement;
             $offset += 1;
             $eoleos = 1;
+            last unless $nest;
             next;
         }
 
@@ -260,7 +266,10 @@ sub lexer
         }
 
         # FIXME Does this ever happen?
-        last if &$skipspace < 0;
+        if(&$skipspace < 0) {
+            $DEBUG and say STDERR "Got skipspace < 0";
+            last;
+        }
 
         # Check if its a opening bracket
         if(substr($linestr, $offset, 1) =~ /(\{|\[|\()/) {
@@ -392,7 +401,7 @@ sub lexer
         $stmt =~ s/\$/\\\$/g;
         $stmt =~ s/\n/\\n/g;
         chomp $stmt;
-        $stmt = substr($stmt, 0, (length $stmt) - 2); # strip the final \\n
+        $stmt = substr($stmt, 0, (length $stmt)); # strip the final \\n
     } else {
         $stmt =~ s/\n//g; # remove multiline on final statement
         chomp $stmt;
@@ -439,7 +448,7 @@ sub lexer
 
     substr($linestr, $sol, (length $linestr) - $sol - 1) = $newline; # put the rest of the statement in
 
-    $DEBUG and say STDERR "Got new linestr[$linestr] from original_linestr[$original_linestr]";
+    ($DEBUG || $SHOWTRANSLATE) and say STDERR "Got new linestr[$linestr] from original_linestr[$original_linestr]";
 
     $DEBUG and print "=" x 80, "\n";
     Devel::Declare::set_linestr($linestr);
