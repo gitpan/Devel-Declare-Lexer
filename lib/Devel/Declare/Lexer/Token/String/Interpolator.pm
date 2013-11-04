@@ -12,20 +12,20 @@ sub interpolate {
 
     my $vars = deinterpolate($string);
     my @varlist = (@$vars);
-    $DEBUG and say STDERR Dumper @varlist;
+    $DEBUG and print STDERR Dumper(@varlist) . "\n";
     my $i = 0;
-    $DEBUG and say STDERR "old string: $string";
+    $DEBUG and print STDERR "old string: $string\n";
     my $offset = 0;
     for my $var (@varlist) {
-        $DEBUG and say STDERR "offset: $offset";
+        $DEBUG and print STDERR "offset: $offset\n";
         substr( $string, $var->{start} + $offset, $var->{length} ) = $values[$i];
         my $oldlen = $var->{length};
         my $newlen = length $values[$i];
         $offset += ($newlen - $oldlen);
-        $DEBUG and say STDERR "new offset: $offset";
+        $DEBUG and print STDERR "new offset: $offset\n";
         $i++;
     }
-    $DEBUG and say STDERR "new string: $string";
+    $DEBUG and print STDERR "new string: $string\n";
     return $string;
 }
 
@@ -34,7 +34,7 @@ sub deinterpolate {
 
     my @vars = ();
 
-    $DEBUG and say STDERR "Deinterpolating '$string'";
+    $DEBUG and print STDERR "Deinterpolating '$string'\n";
 
     my @chars = split //, $string;
 
@@ -44,10 +44,10 @@ sub deinterpolate {
     for my $char (@chars) {
         push @procd, $char;
         $pos++;
-        $DEBUG and say STDERR "Got char '$char' at pos $pos";
+        $DEBUG and print STDERR "Got char '$char' at pos $pos\n";
 
         if($char =~ /[^\w_{}\[\]:@\$]/ && $tok) {
-            $DEBUG and say STDERR "Captured token '$tok' at pos $pos (eot)";
+            $DEBUG and print STDERR "Captured token '$tok' at pos $pos (eot)\n";
             push @vars, {
                 token => $tok,
                 start => $pos - (length $tok),
@@ -59,7 +59,7 @@ sub deinterpolate {
         }
         #if($tok && ($char !~ /[\$\@\%]/ || length $tok == 1)) {
         if($tok && ($char !~ /[\$\@]/ || length $tok == 1)) {
-        $DEBUG and say STDERR "Got tok '$tok' so far";
+        $DEBUG and print STDERR "Got tok '$tok' so far\n";
             my $eot = 0;
             if($char =~ /[':]/) {
                 # do some forwardlooking
@@ -78,7 +78,7 @@ sub deinterpolate {
         if($char =~ /[\$\@]/ || $tok) {
             #if($char =~ /[\$\@\%]/ && $tok && $tok !~ /^[\$\@\%]+$/) {
             if( $tok && (($char =~ /[\$\@]/ && $tok !~ /^[\$\@]+$/))) {
-                $DEBUG and say STDERR "Captured token '$tok' at pos $pos";
+                $DEBUG and print STDERR "Captured token '$tok' at pos $pos\n";
                 push @vars, {
                     token => $tok,
                     start => $pos - (length $tok),
@@ -88,7 +88,7 @@ sub deinterpolate {
                 $tok = '';
             }
             my $capture = 0;
-            $DEBUG and say STDERR "Got tok '$tok' in varcap";
+            $DEBUG and print STDERR "Got tok '$tok' in varcap\n";
             if(!$tok) {
                 # do some backtracking
                 my $ec = 0;
@@ -96,7 +96,7 @@ sub deinterpolate {
                     my $c = $procd[$i];
                     last if $c !~ /\\/;
                     $ec++;
-                    $DEBUG and say STDERR "Got char '$c' at pos $i, ec $ec";
+                    $DEBUG and print STDERR "Got char '$c' at pos $i, ec $ec\n";
                 }
                 $capture = $ec % 2 == 0 ? 1 : 0;
                 #if($ec % 2 == 0) {
@@ -105,17 +105,17 @@ sub deinterpolate {
                 #    print "probably not a token\n";
                 #}
             }
-            $DEBUG and say STDERR "Got capture $capture\n";
+            $DEBUG and print STDERR "Got capture $capture\n\n";
             $tok = $char if $capture;
             next;
         }
     }
 
     if(wantarray) {
-        $DEBUG and say STDERR "Returning array of token names";
+        $DEBUG and print STDERR "Returning array of token names\n";
         return map { $_->{token} } @vars;
     }
-    $DEBUG and say STDERR "Returning arrayref";
+    $DEBUG and print STDERR "Returning arrayref\n";
     return \@vars;
 }
 
