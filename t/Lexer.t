@@ -83,7 +83,7 @@ lexer_test q(this
 is
 a
 multiline);
-++$tests && is($lexed, q|lexer_test q(this\nis\na\nmultiline);|, 'q quoting operator with multiline');
+++$tests && is($lexed, qq|lexer_test q(this\nis\na\nmultiline);|, 'q quoting operator with multiline');
 
 lexer_test ( {
     abc => 2,

@@ -20,6 +20,7 @@ t/Factory.t
 t/hashes.t
 t/Lexer.t
 t/Raw.t
+t/bugs.t
 t/strings.t
 t/subs.t
 t/inject.t

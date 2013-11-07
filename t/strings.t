@@ -65,29 +65,25 @@ quotes";
 # turned into a newline, at least not when we re-output the code from
 # the lexer... and since we can't output across multiple lines,
 # we end up with a string literally containing \n's!
-my $c = q(\nA multiline q test\n);
+my $c = q(A multiline q test);
 test $s = q(
 A multiline q test
 );
 ++$tests && is($s, $c, 'Multiline q test');
 
-my $d = qq(
-A multiline qq test
-);
+my $d = qq(A multiline qq test);
 test $s = qq(
 A multiline qq test
 );
 ++$tests && is($s, $d, 'Multiline qq test');
 
-my $e = qq(
-String interpolation in a '$s'
-);
+my $e = qq(String interpolation in a '$s');
 test $s = qq(
 String interpolation in a '$s'
 );
 ++$tests && is($s, $e, 'String interpolation in multiline qq');
 
-++$tests && is(__LINE__, 90, 'Line numbering (CHECK WHICH LINE THIS IS ON)');
+++$tests && is(__LINE__, 86, 'Line numbering (CHECK WHICH LINE THIS IS ON)');
 
 done_testing $tests;
 

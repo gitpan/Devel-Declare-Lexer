@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use v5;
 
-our $VERSION = '0.013';
+our $VERSION = '0.014';
 
 use Data::Dumper;
 use Devel::Declare;
@@ -309,33 +309,45 @@ sub lexer
         if(substr($linestr, $offset, 1) =~ /^(q|\"|\')/) {
             # FIXME need to determine string type properly
             my $strstype = substr($linestr, $offset, 1);
-            my $stretype = $strstype;
-            if($strstype =~ /q/) {
-                if(substr($linestr, $offset, 2) =~ /qq/) {
-                    $strstype = substr($linestr, $offset, 3);
-                    $offset += 2;
-                } else {
-                    $strstype = substr($linestr, $offset, 2);
-                    $offset += 1;
+
+            my $allow_string = 1;
+
+            if($strstype eq 'q') {
+                if(substr($linestr, $offset + 1, 1) !~ /\|\{\[\(\#/) {
+                    $DEBUG and print STDERR "This 'q' isnt a string type\n";
+                    $allow_string = 0;
                 }
-                $stretype = substr($linestr, $offset, 1);
-                $stretype =~ tr/\(/)/;
-                $len = Devel::Declare::toke_scan_str($offset);
-            } else {
-                $len = Devel::Declare::toke_scan_str($offset);
             }
-            $DEBUG and print STDERR "Got string type '$strstype', end type '$stretype'\n";
-            $tok = Devel::Declare::get_lex_stuff;
-            Devel::Declare::clear_lex_stuff;
-            $DEBUG and print STDERR "Got string '$tok'\n";
-            push @tokens, new Devel::Declare::Lexer::Token::String( start => $strstype, end => $stretype, value => $tok );
-            # get a new linestr - we might have captured multiple lines
-            $linestr = Devel::Declare::get_linestr;
-            $offset += $len;
 
-            # If we do have multiple lines, we'll fix line numbering at the end
+            if($allow_string) {
+                my $stretype = $strstype;
+                if($strstype =~ /q/) {
+                    if(substr($linestr, $offset, 2) =~ /qq/) {
+                        $strstype = substr($linestr, $offset, 3);
+                        $offset += 2;
+                    } else {
+                        $strstype = substr($linestr, $offset, 2);
+                        $offset += 1;
+                    }
+                    $stretype = substr($linestr, $offset, 1);
+                    $stretype =~ tr/\(/)/;
+                    $len = Devel::Declare::toke_scan_str($offset);
+                } else {
+                    $len = Devel::Declare::toke_scan_str($offset);
+                }
+                $DEBUG and print STDERR "Got string type '$strstype', end type '$stretype'\n";
+                $tok = Devel::Declare::get_lex_stuff;
+                Devel::Declare::clear_lex_stuff;
+                $DEBUG and print STDERR "Got string '$tok'\n";
+                push @tokens, new Devel::Declare::Lexer::Token::String( start => $strstype, end => $stretype, value => $tok );
+                # get a new linestr - we might have captured multiple lines
+                $linestr = Devel::Declare::get_linestr;
+                $offset += $len;
 
-            next;
+                # If we do have multiple lines, we'll fix line numbering at the end
+
+                next;
+            }
         }
         # Check for heredoc
         if(substr($linestr, $offset)=~ /^(<<\s*([\w\d]+)\s*\n)/) {
